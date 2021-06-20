@@ -1,0 +1,420 @@
+---
+title: "KC_House Final project Submission"
+author: "Vidyasagar Kummarikunta"
+date: "11/20/2020"
+output: 
+       word_document: default
+       pdf_document: default
+---
+
+***************************************
+# Final Project Data Set: Housing Sales
+***************************************
+
+# Section 1:  
+
+.	I am interested in identifying the patterns in the dataset to address the factors    
+that affect the prices of houses.
+.	The model built can eventually predict the house prices  
+.	The dataset contains house sale prices for King County, USA which includes Seattle      
+and the dataset is obtained from the Kaggle.  
+.	Original source is -  https://www.kaggle.com/harlfoxem/housesalesprediction    
+.	The data is present for over a period of 1 year from May 2014 to May 2015.    
+.	This dataset is good for evaluating simple regression models.    
+.	I have observed that there are no missing values in the dataset.    
+.	The packages that I am going to mostly use are 'dplyr' and 'ggplot' along with  
+the basic R utilities  
+.	The dataset has approximately 21613 records 21 different variables. So we can  
+use around 20 different variables as a predictors to predict the house prices which  
+are listed below in the analysis.    
+
+
+****************************************************************************************************************************************************************************************************************************************************************************************************************
+
+# Section 2:  
+
+.	My major goal is to identify the predictive variables for the house pricing.   
+.	 I am thinking to use a multivariate regression algorithm to predict the house  
+pricing based on the available data. 
+.	As the first step in the process I imported the data and performed the required  
+cleaning. After cleaning, in my second step I looked for missing values, and if the  
+variables are in right format in terms of datatype. Once the data is in the right  
+format, third step is to visualize data, so I performed extensive visual analysis  
+to understand the critical factors influencing the house prices. Additionally, I  
+am also interested in understanding the overall information specific to each variable  
+like out of all the houses sold, how many of them are 3 bedroom and how many are  
+2 bedrooms.
+
+Using the data, I will address the below research questions:  
+--	Build a machine learning model to predict the house prices in King County, USA  
+--Narrow down on factors that predominantly influences the house price  
+--Understand the distribution of different variables given in the dataset  
+--In addition to individual factors, understand the effect of combination of factors  
+that influence the house prices  
+--Understand the correlation between the variables by building correlation matrix
+--Descriptive statistics related to individual variables  
+--In addition to predictive model, I am also interested in exploring the classification  
+algorithms to see if I can bucket the observations  
+
+.	I will be building a flexible and scalable model so that we can feed a new set of  
+data to the model and use it in other areas too.  
+.	For visualization, I used scatterplots, histograms and box plots.  
+
+
+
+
+****************************************************************************************************************************************************************************************************************************************************************************************************************
+
+# Section 3:  
+
+.	The code for importing the data is shown below. The dataset is checked for missing  
+values and the dataset does not conatin any missing values.
+.	As I am performing analysis using dplyr package I the imported data is converted  
+into "tibble" 
+.	For few variables I included basic visualization.
+.	Some transformations of the data fid done for performing the analysis
+ 
+
+*******************************************************************************************************************************************************
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+## Loading housing data set  
+
+I choose the house price data set for my final project
+
+```{r}
+data <- read.csv("kc_house_data.csv", header = TRUE)
+
+head(data)
+```
+
+## Converting the data frame into tibble   
+
+```{r}
+mydata <- as_tibble(data) 
+```
+
+## Final look at the tibble that will be analyzed  
+
+- There are variables like zipcode, year built etc that needs to be converted into  
+proper datatype. In this case they needs to categorical variables.
+- In the next steps I am going to handle the missing values and then before going  
+deep into the analysis I will be doing the necessary data type conversions
+
+```{r}
+data <- na.omit(data)
+glimpse(data)
+```
+
+# Checking for missing values  
+
+
+Changed the code to get a boolean value indicating the presence of the missing values.  
+Since the output is 'FALSE' it shows there are no missing values in the dataset
+
+```{r}
+any(is.na(data))
+colSums(is.na(data))
+```
+
+# Descriptive statistics  
+
+Updated: Performed descriptive statistics on the whole datset
+
+```{r}
+#summary(data[3])
+summary(data)
+```
+
+# Basic Visualization of House Price  
+
+```{r}
+
+hist(data$price, col = "blue", xlab = "House Price",  main = "Distribution of House Prices")
+
+```
+
+# Quantitatively understanding the distribution    
+
+Understanding whether the house prices are normally distributed or is there any  
+skewness.
+Given the positive values for both skewness and kurtosis, together they are telling  
+us that there is fat tailing towards the right side
+
+```{r}
+library(moments)
+skewness(data$price)
+kurtosis(data$price)
+```
+
+
+# Basic Visualization of Number of bedrooms  
+
+Between the visualization by histogram and the table below clearly shows the  
+distribution of the total number of houses by bed rooms.
+Added the table command to get the exact number which are otherwise  
+harder to read from the histogram.
+
+```{r}
+
+hist(data$bedrooms, col = "blue", xlab = "Number of Bedrooms",  
+     main = "Distribution of Number of Bedrooms")
+
+```
+
+```{r}
+
+table(data$bedrooms)
+
+```
+
+
+# Basic Visualization of Number of Houses from each Zipcode  
+
+Between the visualization by histogram and the table below clearly shows the distribution of the overall zipcodes in the data
+
+Added the table command to get the exact number which are otherwise harder to read from the histogram.
+
+```{r}
+
+hist(data$zipcode, col = "blue", xlab = "Zipcodes", 
+     main = "Distribution of Houses in Different Zipcodes")
+
+```
+
+```{r}
+
+max(table(data$zipcode))
+
+```
+
+************************************************************************************************************************************************************************************************************************************************************************************************************************
+
+
+
+# Uncover New Information:  
+
+So far we have looked at the data, cleaned the data in terms of missing values,  
+assigning the right data type for the variables etc. 
+In order to uncover any information we need to look at the data by looking at the  
+relationships both visually and quantitatively. 
+As a first step, I will perform some scatterplot and boxplot visualizations to  
+get a feel for the data
+Followed by that will do multivariate regression to undestand the factors influencing  
+the house prices
+
+
+- Handling the conversion of continous variables to factorial variables
+
+```{r}
+data$bedrooms <- as.factor(data$bedrooms)
+data$floors <- as.factor(data$floors)
+data$yr_built <- as.factor(data$yr_built)
+data$yr_renovated <- as.factor(data$yr_renovated)
+data$grade <- as.factor(data$grade)
+data$condition <- as.factor(data$condition)
+data$zipcode <- as.factor(data$zipcode)
+data$view <- as.factor(data$view)
+data$waterfront <- as.factor(data$waterfront)
+data$bathrooms <- as.factor(data$bathrooms)
+```
+
+View of the final version
+
+```{r}
+glimpse(data)
+```
+
+```{r}
+data$price <- as.integer(data$price)
+data$price <- as.integer((data$price/1000))
+```
+
+## Below are the few ways to look at the data to uncover some of the information  
+
+# Plotting the data to numerically and visually uncover the information  
+
+Uncovering the relationships numerically
+
+- As we can clearly see after filtering the continous variables, there is a very  
+clear correlation between the sqft_living, sqft_above, squareft_living15, sqft_basement  
+are correlated. Interestingly, sqft_lot does not have a bigger influence
+
+```{r}
+nums <- Filter(is.numeric, data)
+res <- cor(nums, method = "pearson", use = "complete.obs")
+res
+```
+
+
+Visualizing the correlation plots
+
+```{r}
+library(corrplot)
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+
+
+Visualizing the relationship trends that effect the price
+
+Price versus Number of bedrooms
+
+```{r}
+ggplot(data = data, aes(x = bedrooms, y = price)) + geom_boxplot()
+```
+
+```{r}
+ggplot(data = data, aes(x = bathrooms, y = price)) + geom_boxplot()
+```
+
+Sqft_living versus Price
+
+```{r}
+p1 <- ggplot(data = data, aes(x = sqft_living15 , y = price)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4, col = "red") + geom_smooth(method = "lm", se = FALSE)
+p1
+```
+
+```{r}
+summary(p1)
+```
+
+Sqft_living versus Price
+
+```{r}
+ggplot(data = data, aes(x = sqft_living , y = price)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4, col = "red") + geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lm(formula = price ~ sqft_living, data = data) %>% summary()
+```
+
+
+Sqft_above versus Price
+
+```{r}
+ggplot(data = data, aes(x = sqft_above , y = price)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4, col = "red") + geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lm(formula = price ~ sqft_above, data = data) %>% summary()
+```
+
+Sqft_basement versus Price
+
+```{r}
+ggplot(data = data, aes(x = sqft_basement , y = price)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4, col = "red") + geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lm(formula = price ~ sqft_basement, data = data) %>% summary()
+```
+
+# Uncovering the information by combination of variables  
+
+Adding a third variable like waterfront. As we can see in addition to number of bedrooms there is a strong interaction between bedrooms and waterfront with and without waterfront view. As long as there is waterfront view the house prices are higher
+
+```{r}
+ggplot(data = data, aes(x = bedrooms, y = price, fill = waterfront)) + geom_boxplot()
+```
+
+- Simalarly having bathrooms has the same effect.i.e. number of bathrooms and waterfront together has influence on the house price
+
+```{r}
+ggplot(data = data, aes(x = bathrooms, y = price, fill = waterfront)) + geom_boxplot()
+```
+
+- Similarly looking at the effect of a view in determining the price of the house depending on the number of times the house has been viewed
+
+- In general, as the number of view increases the house prices seems to be increasing
+
+```{r}
+ggplot(data = data, aes(x = bedrooms, y = price, fill = view)) + geom_boxplot()
+```
+
+```{r}
+ggplot(data = data, aes(x = bathrooms, y = price, fill = view)) + geom_boxplot()
+```
+
+- Here we are looking at the effect of having waterfront on the house prices. As we can see the slope of the line is more steeper indicating the influence of having a waterfront along with sqft of living from 2015
+
+```{r}
+ggplot(data = data, aes(x = sqft_living15 , y = price, col = waterfront)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4) + geom_smooth(method = "lm", se = FALSE)
+```
+
+Sqft_living versus Price
+
+- Here we are looking at the effect of having waterfront on the house prices. As we can see the slope of the line is more steeper indicating the influence of having a waterfront along with sqft of living
+
+```{r}
+ggplot(data = data, aes(x = sqft_living , y = price, col = waterfront)) + geom_point(position = "jitter", size = 1, shape = 1, alpha = 0.4) + geom_smooth(method = "lm", se = FALSE)
+```
+
+
+# Slicing and Dicing, Learn Packages  
+
+- In the current data set ther is no need for actually to slice and dice the data. Currently I am interested in only understanding the factors effecting the house price. At this point dataset is very clean does not need any kind of slicing or dicing. Its a sinle data set and does not require any joing of data. Coming to learning packages, at this I am good at "dplyr", "ggplot" are enough for this project. 
+
+# Summarizing the data  
+
+- The key question is what are the factors influencing the house prices
+
+From the visualizations and linear fits it is evident that:
+
+
+- Sqft_living, sqft_above are the top two factors with highest correlation to the price as seen from the correlation matrix
+- Coming to the categorical factors as we saw in the box plots, price has a clear correlation to the number of bedrooms and bathrooms. In addition, while we control other factors, number of views and waterfront has a positive impact on the house prices
+
+- However, all the above conclusions are by looking at the each variables individually and hecne in the following code, I am going build a linear predictive model to dtermine the price of the house
+
+
+```{r}
+lm1 <- lm(data$price ~ sqft_living + sqft_lot + sqft_basement + waterfront + view + grade + zipcode + condition + sqft_living:waterfront + sqft_living:view + sqft_lot:waterfront, data = data)
+summary(lm1)
+```
+
+- The above model has a good R square value and Adjusted R square Value.
+- ~ 85% of the variability in price is explained by the sqft_living, sqft_basement,have waterfront or not, and the number of views the house has since listed,  zipcode, condition and grade of the house
+
+# Tables and Plots And Things to Learn  
+
+.	Expand my knowledge on logistic regression model to predict the probability of price of house
+.	Scatterrplots and Box plots were used to explore and uncover the data.
+.	While trying to plot bivariate analysis the figures are very crowded, trying to find a way to fix this issue
+.	I am not comfortable for changing the price values from 1000's to k's to plot as variable on the y-axis.
+.	I still need to learn how to bin my x-axis values as the x-axis looks very crowded when I try to plot the price against years_built, years_renovated.
+
+
+#	Build a machine learning model   
+
+Currently I used multivariate linear regression. However, I did not really split the data into train and test to assess the predictions from machine learning model. Similraly I want to explore, if I can apply any other models that I will learn in the rest of the course.
+
+************************************************************************************************************************************************************
+************************************************************************************************************************************************************
+
+
+#1  
+
+ I am working on the dataset which has the house prices of King County, USA. There were ~21000 records and 21 variables of data. The main goal was to identify the variables that are accountable for the prediction of house prices. So, the dataset was downloaded from the kaggles website and cleaned for missing values and then dataset handled to correct the data type of all the independent variables. Latter performed data visualization to see the distribution of variables through scatter plots or histograms to understand the distribution of data within each variable or the relationships between the variables. Finally, to address the prediction variables the cleaned and processed data is fed into multiple linear regression analysis. Based on analysis, by looking at the significant variables in the data the most influencing predictor variables on price were determined.
+ 
+#2  
+The problem statement addressed in the analysis is "What are the key factors in predicting a house price in the King County USA?" There are around 21 variables that provides information such as - when the house was sold, number of bedrooms, number of bathrooms,  how many  floors, does it have a waterfront, what is the house condition, what is the year built and renovated , does it have a basement, square footage of the lot size both interior and exterior. At the end of the analysis the user using the model should be able to feed the relevant factors as input and get an accurate estimation of the house price.
+
+#3  
+I need to pick most affecting predictors among the 21 variables. To achieve this, I used a multiple linear regression model. It fits well for the purpose as there are multiple independent variables, I need to reduce the number of dimensions I am interested in the prediction of the house price. At first, I included all the variables for the analysis. Further the variables are fine tuned bsed on the outcome of the regression model. I was mainly considering the significance level of the p value associated with each of the predictor variables that were fed into the model. Later in the iterative process I removed one variable at a time and refitted the model. Finally, I also included the interaction terms inorder to identify if any of the factors together influence the outcome of the house price in the model.
+
+#4  
+The key variables that are key in predicting the price of the house in the King, County, UAS are clearly identified by the model. Out of the 21 variables from the dataset, the model selected zipcode, sqft_basement, sqft_living, have waterfront or not, and the number of views the house has since listed, condition and grade of the house as the key indicators of the house prices. From 21 variables going to 7 varaibles is a great drop in the number of variables. Given the R-Ssquare value of 0.85 and with the selected variables, the model is able explain about 85% of the variability in the house price prediction.
+
+#5  
+Regarding the effects on the target user, the model has a huge value in terms of predicting the house price. As an end user who is interested in buying a house in the King County, USA now has a pretty good idea of what are the factors that will influence the price of the house. This will help both the seller and buyer. Based on the coefficents generated in the model, the end user now clearly can see by what factor a house price will change if one of the above listed variables are changed by a unit. Given the coefficients from the linear model the model can identify within those factors which are key so that the end users can prioritize depending on the end price.
+
+
+#6  
+In my view, I think I could optimize the model furthermore by reducing the number of categorical variables. For example, if I incorporate the categorical variable zipcode into the model as we can see it has too many levels. And I realized this is one of the major issues while dealing with categorical varaibles whenever there are too many levels. The linear model is going to generate coefficients for each of the individual categorical variable and as we know this can get out of control soon. So, I was exploring different options on how to reduce the dimensionality of the data and came across several techniques online and I found clustering is one of the major technique that can be used to group categorical variables, either based on abundance, colinearity, number of missing values or by ranking. These are the techniques I would like to explore and retune my model so that the model is more sophisticated.
+ 
+
